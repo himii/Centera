@@ -1,0 +1,11 @@
+function onUse(cid, item, fromPosition, itemEx, toPosition)
+	if getPlayerLevel(cid) <= 500 then
+		doPlayerSendTextMessage(cid,21,"Have been rewarded 1 level!")
+		doPlayerAddSkill(pid, SKILL__LEVEL, 1, true)
+		doRemoveItem(item.uid, 1)
+	elseif getPlayerLevel(cid) >= 501 then
+		doPlayerSendTextMessage(cid, 22, "You will now be rewarded with exp!")
+		doPlayerAddExp(cid, 16180000)
+	end
+	return true
+end
