@@ -1,56 +1,133 @@
-local config = {
-	daily = "no", -- allow only one enter per day? (like in global Tibia)
-	level = 100,
-	storage = 30015,
-	entry =
-	{
-		{x = 247, y = 659, z = 13},
-		{x = 247, y = 660, z = 13},
-		{x = 247, y = 661, z = 13},
-		{x = 247, y = 662, z = 13}
-	},
-	destination =
-	{
-		{x = 189, y = 650, z = 13},
-		{x = 189, y = 651, z = 13},
-		{x = 189, y = 652, z = 13},
-		{x = 189, y = 653, z = 13}
-	}
-}
+-- Annihilator by Himii v4.1
 
-config.daily = getBooleanFromString(config.daily)
+        -- CONFIG --
+
+        local room = {     -- room with demons
+        fromX = 763,
+        fromY = 1167,
+        fromZ = 6,
+        --------------
+        toX = 771,
+        toY = 1171,
+        toZ = 6
+        }
+
+        local monster_pos = {
+        [1] = {pos = {769, 1167, 6}, monster = "Demon"},
+        [2] = {pos = {767, 1167, 6}, monster = "Demon"},
+        [3] = {pos = {765, 1167, 6}, monster = "Demon"},
+        [4] = {pos = {763, 1167, 6}, monster = "Demon"},
+        [5] = {pos = {763, 1169, 6}, monster = "Demon"},
+        [5] = {pos = {763, 1171, 6}, monster = "Demon"},
+        [7] = {pos = {765, 1171, 6}, monster = "Demon"},
+        [8] = {pos = {767, 1171, 6}, monster = "Demon"},
+        [9] = {pos = {769, 1171, 6}, monster = "Demon"},
+        [10] = {pos = {770, 1169, 6}, monster = "Demon"}
+        }
+
+        local players_pos = {
+        {x = 803, y =1133, z = 7, stackpos = 253},
+        {x = 804, y =1133, z = 7, stackpos = 253},
+        {x = 805, y =1133, z = 7, stackpos = 253},
+        {x = 805, y =1133, z = 7, stackpos = 253}
+        }
+
+        local new_player_pos = {
+        {x = 359, y = 548, z = 5},
+        {x = 360, y = 548, z = 5},
+        {x = 361, y = 548, z = 5},
+        {x = 362, y = 548, z = 5}
+        }
+
+        local playersOnly = "yes"
+        local questLevel = 250
+
+        ------------------------------------------------------
+        --- CONFIG END ---------------------------------------
+        ------------------------------------------------------
+
 function onUse(cid, item, fromPosition, itemEx, toPosition)
-	if(item.itemid == 1946) then
-		if(config.daily) then
-			doPlayerSendDefaultCancel(cid, RETURNVALUE_NOTPOSSIBLE)
-		else
-			doTransformItem(item.uid, item.itemid - 1)
-		end
-
-		return true
-	end
-
-	if(item.itemid ~= 1945) then
-		return true
-	end
-
-	local players = {}
-	for _, position in ipairs(config.entry) do
-		local pid = getTopCreature(position).uid
-		if(pid == 0 or not isPlayer(pid) or getCreatureStorage(pid, config.storage) > 0 or getPlayerLevel(pid) < config.level) then
-			doPlayerSendDefaultCancel(cid, RETURNVALUE_NOTPOSSIBLE)
-			return true
-		end
-
-		table.insert(players, pid)
-	end
-
-	for i, pid in ipairs(players) do
-		doSendMagicEffect(config.entry[i], CONST_ME_POFF)
-		doTeleportThing(pid, config.destination[i], false)
-		doSendMagicEffect(config.destination[i], CONST_ME_ENERGYAREA)
-	end
-
-	doTransformItem(item.uid, item.itemid + 1)
-	return true
+        local all_ready, monsters, player, level = 0, 0, {}, 0
+        if item.itemid == 9826 then
+                for i = 1, #players_pos do
+                        table.insert(player, 0)
+                end
+                for i = 1, #players_pos do
+                        player[i] = getThingfromPos(players_pos[i])
+                        if player[i].itemid > 0 then
+                                if string.lower(playersOnly) == "yes" then
+                                        if isPlayer(player[i].uid) == TRUE then
+                                                all_ready = all_ready+1
+                                        else
+                                                monsters = monsters+1
+                                        end
+                                else
+                                        all_ready = all_ready+1
+                                end
+                        end
+                end
+                if all_ready == #players_pos then
+                        for i = 1, #players_pos do
+                                player[i] = getThingfromPos(players_pos[i])
+                                if isPlayer(player[i].uid) == TRUE then
+                                        if getPlayerLevel(player[i].uid) >= questLevel then
+                                                level = level+1
+                                        end
+                                else
+                                        level = level+1
+                                end
+                        end
+                        if level == #players_pos then
+                                if string.lower(playersOnly) == "yes" and monsters == 0 or string.lower(playersOnly) == "no" then
+                                        for _, area in pairs(monster_pos) do
+                                                        doSummonCreature(area.monster,{x=area.pos[1],y=area.pos[2],z=area.pos[3]})
+                                        end
+                                        for i = 1, #players_pos do
+                                                doSendMagicEffect(players_pos[i], CONST_ME_POFF)
+                                                doTeleportThing(player[i].uid, new_player_pos[i], FALSE)
+                                                doSendMagicEffect(new_player_pos[i], CONST_ME_ENERGYAREA)
+                                                doTransformItem(item.uid,1946)
+                                        end
+                                else
+                                        doPlayerSendTextMessage(cid,19,"Only players can do this quest.")
+                                end
+                        else
+                                doPlayerSendTextMessage(cid,19,"All Players have to be level "..questLevel.." to do this quest.")
+                        end
+                else
+                        doPlayerSendTextMessage(cid,19,"You need "..table.getn(players_pos).." players to do this quest.")
+                end
+        elseif item.itemid == 1946 then
+                local player_room = 0
+                for x = room.fromX, room.toX do
+                        for y = room.fromY, room.toY do
+                                for z = room.fromZ, room.toZ do
+                                        local pos = {x=x, y=y, z=z,stackpos = 253}
+                                        local thing = getThingfromPos(pos)
+                                        if thing.itemid > 0 then
+                                                if isPlayer(thing.uid) == TRUE then
+                                                        player_room = player_room+1
+                                                end
+                                        end
+                                end
+                        end
+                end
+                if player_room >= 1 then
+                        doPlayerSendTextMessage(cid,19,"There is already a team in the quest room.")          
+                elseif player_room == 0 then
+                        for x = room.fromX, room.toX do
+                                for y = room.fromY, room.toY do
+                                        for z = room.fromZ, room.toZ do
+                                                local pos = {x=x, y=y, z=z,stackpos = 253}
+                                                local thing = getThingfromPos(pos)
+                                                if thing.itemid > 0 then
+                                                        doRemoveCreature(thing.uid)
+                                                end
+                                        end
+                                end
+                        end
+                        doTransformItem(item.uid,1945)
+                end
+        end
+        return TRUE
 end
